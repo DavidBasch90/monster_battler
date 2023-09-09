@@ -1,0 +1,11 @@
+# Ignore everything in the directory
+assets/*
+output/*
+
+
+# But don't ignore the directory itself
+!assets/.gitkeep
+!output/.gitkeep
+
+!assets/music/.gitkeep
+!assets/images/.gitkeep
