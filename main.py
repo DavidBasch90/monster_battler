@@ -113,25 +113,25 @@ while running:
         if event.type == pygame.QUIT:
             logging.info('QUIT GAME')
             running = False
+
         if event.type == pygame.KEYDOWN:
             logging.info('keydown')
             if game_over:
                 running = False
-            if interacting_npc:
-                print(interacting_npc.dialogue_state)
+
             if interacting_npc and interacting_npc.dialogue_state == "defeated":
                 interacting_npc.key_pressed_after_defeat = True
                 interacting_npc = None
             if event.key == pygame.K_z and not battle_active:
                 logging.info('non battle key press: z')
-                print(interacting_npc)
+
                 if interacting_npc is None:
                     collided_npcs = pygame.sprite.spritecollide(player, npcs, False)
                     print(collided_npcs)
                     for npc in collided_npcs:
                         interacting_npc = npc
                         logging.info('npc interacting with player')
-                        print('a npc is interacting')
+
                         interacting_npc.interact(player, screen, font)
             if interacting_npc:
                 if interacting_npc:
@@ -169,8 +169,9 @@ while running:
         if battle_done is True:
 
 
-            print('what about here?')
+
             logging.info('ending battle')
+            print('hi')
             battle_active = False
             if not battle.npc_team:  # Check if the NPC team is empty
                 logging.info('empty team for npc')

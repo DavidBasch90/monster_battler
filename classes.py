@@ -181,6 +181,7 @@ class Battle:
         self.message_queue = []
         self.win_message_displayed = False
         self.lose_message_displayed = False
+        self.pending_damage = 0
 
 
     def is_npc_defeated(self):
@@ -213,13 +214,14 @@ class Battle:
                 self.moves_menu.draw(screen)
 
             # Draw message bar
-            message_x = 50
-            message_y = 500
-            message_width = WIDTH - 2 * message_x
-            message_height = 50
-            pygame.draw.rect(screen, (0, 0, 0),
-                             (message_x, message_y, message_width, message_height))  # Black background
+
             if self.message_queue:
+                message_x = 50
+                message_y = 500
+                message_width = WIDTH - 2 * message_x
+                message_height = 50
+                pygame.draw.rect(screen, (0, 0, 0),
+                                 (message_x, message_y, message_width, message_height))  # Black background
 
                 render_text(screen, self.font, self.message_queue[0], message_x + 10, message_y + 10,
                             (255, 255, 255))  # White text
@@ -233,12 +235,13 @@ class Battle:
         for move in attacker.moves:
             if move.name == move_name:
                 damage = int(attacker.attack * move.power - defender.defense)
-                defender.health = max(defender.health - damage, 0)
+
                 message = f"{attacker.name} used {move.name}!"
                 if random.random() >= move.accuracy:
                     message += " The move missed!"
                 else:
                     message += f" It dealt {damage} damage!"
+                    self.pending_damage = damage
                 self.message_queue.append(message)
                 break
 
@@ -274,9 +277,7 @@ class Battle:
                 # Check if the 'Z' key was pressed
                 elif event.key == pygame.K_z:
                     if self.message_queue:
-                        # If the current message is "Enemy monster fainted!", remove the defeated monster
-                        if self.message_queue[0] == "Enemy monster fainted!":
-                            self.npc_team.pop(0)  # Remove defeated monster
+
                         self.message_queue.pop(0)
                     # If the menu state is 'main'
                     if self.menu_state == "main":
@@ -300,22 +301,22 @@ class Battle:
                         self.menu_state = "main"
 
     def update(self, events):
-        battle_done = False
-
 
         if self.message_queue:
             return None  # Don't proceed with other logic until messages are cleared
-
+        if not self.npc_team:
+            return True
 
         if self.state == "npc_turn":
             if not self.npc_team:
-                return
+                return True
             if not self.player_team:
-                return
+                return True
             current_monster = self.npc_team[self.current_monster]
             move_name = random.choice(self.npc_team[0].moves).name
             self.use_move(current_monster, move_name, self.player_team[0])
-            print('npc picking turn')
+            if self.pending_damage:
+                self.player_team[0].health = max(self.player_team[0].health - self.pending_damage, 0)
             if self.player_team[0].health == 0:
                 self.player_team.pop(0)
                 self.message_queue.append("Player's monster fainted!")
@@ -354,26 +355,31 @@ class Battle:
                                 selected_move = self.moves_menu.get_selected_item()
 
                                 self.use_move(current_monster, selected_move, self.npc_team[0])
-
+                                if self.pending_damage:
+                                    self.npc_team[0].health = max(self.npc_team[0].health - self.pending_damage, 0)
                                 if self.npc_team[0].health == 0:  # Check if NPC's monster is dead
                                     self.message_queue.append("Enemy monster fainted!")
+                                    self.npc_team.pop(0)  # Remove defeated monster
                                     self.state = "waiting_for_input"  # Change state to waiting_for_input
                                 else:
                                     self.state = "npc_turn"
 
+                #if the player's team or the npc team is defeated
+                if not self.player_team or not self.npc_team:
+
+                    if not self.npc_team:
+                        self.message_queue.append("You win!")
 
 
-        #if the player's team or the npc team is defeated
-        if not self.player_team or not self.npc_team:
-            if not self.npc_team and not self.win_message_displayed:
-                self.message_queue.append("You win!")
 
-                self.win_message_displayed = True
-                return True
-            elif not self.player_team and not self.lose_message_displayed:
-                self.message_queue.append("You lose!")
-                self.lose_message_displayed = True
-                return True
+
+
+
+                    elif not self.player_team:
+                        self.message_queue.append("You lose!")
+
+
+
 
         return None
 
